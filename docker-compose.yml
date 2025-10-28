@@ -1,0 +1,35 @@
+
+services:
+  gitea-sync:
+    build: ./gitea-sync
+    container_name: gitea-sync
+    restart: unless-stopped
+    environment:
+      - GITEA_URL=${GITEA_URL}
+      - GITEA_TOKEN=${GITEA_TOKEN}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - SYNC_THRESHOLD_BUILDS=${SYNC_THRESHOLD_BUILDS:-5}
+      - SYNC_THRESHOLD_HOURS=${SYNC_THRESHOLD_HOURS:-48}
+      - WEBHOOK_PORT=${WEBHOOK_PORT:-3000}
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - TZ=America/Chicago  # Your timezone
+    ports:
+      - "${WEBHOOK_PORT:-3000}:3000"
+    volumes:
+      - ./data:/app/data
+      - sync-repos:/tmp/sync-repos
+    networks:
+      - gitea-sync-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  sync-repos:
+
+networks:
+  gitea-sync-network:
+    driver: bridge
